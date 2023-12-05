@@ -1,0 +1,106 @@
+Resources:
+
+  # ECS service
+  MyService: 
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster: !Ref Cluster 
+      TaskDefinition: !Ref TaskDefinition
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+
+  # CodeDeploy application 
+  MyApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties: 
+      ApplicationName: BlueGreenSample
+      ComputePlatform: ECS
+
+  # CodeDeploy deployment group
+  DeploymentGroup:  
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref MyApplication 
+      DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce 
+      DeploymentGroupName: MyDeploymentGroup
+      ServiceRoleArn: !Ref CodeDeployRole
+      Ec2TagFilter: 
+        Type: key-value
+        Key: Name
+        Value: ecs-host
+      DeploymentStyle: 
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+        DeploymentType: BLUE_GREEN
+      EcsServices: 
+        - ClusterName: !Ref Cluster
+          ServiceName: !Ref MyService
+
+# IAM role for CodeDeploy    
+CodeDeployRole:
+  Type: AWS::IAM::Role
+  Properties:
+    AssumeRolePolicyDocument: 
+      Version: "2012-10-17"
+      Statement: 
+        - Effect: Allow 
+          Principal: 
+            Service: codedeploy.amazonaws.com
+          Action: "sts:AssumeRole"
+
+  # ECS cluster
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+
+  # Task definition
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: my-task
+      ContainerDefinitions: 
+        - Name: my-container
+          Image: nginx:latest 
+          PortMappings:
+            - ContainerPort: 80
+
+  # ECS service  
+  Service:
+    Type: AWS::ECS::Service
+    Properties:  
+      Cluster: !Ref EcsCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 1
+
+  # NLB
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: network
+      LoadBalancerAttributes:
+        - Key: "idle_timeout.timeout_seconds"
+          Value: "30"
+
+  # Target group  
+  TargetGroup:  
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      Port: 80
+      Protocol: TCP
+      TargetType: ip
+      Targets:
+        - Port: 80
+          TargetType: ip
+          Id: !Ref Service
+
+  # Listener  
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: TCP
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+
+This creates the necessary resources to deploy a containerized task behind an NLB. Let me know if any part needs more explanation!
