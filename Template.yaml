@@ -36,6 +36,7 @@ Resources:
         - ClusterName: !Ref Cluster
           ServiceName: !Ref MyService
 
+
 # IAM role for CodeDeploy    
 CodeDeployRole:
   Type: AWS::IAM::Role
