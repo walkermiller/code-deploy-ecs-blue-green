@@ -110,8 +110,9 @@ Resources:
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
+      RequiresCompatibilities:
+        - FARGATE
       Family: my-task
-      RuntimePlatform: FARGATE
       NetworkMode: awsvpc
       Memory: 512
       CPU: 256
