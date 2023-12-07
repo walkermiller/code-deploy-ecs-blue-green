@@ -3,7 +3,7 @@ Resources:
   MyService: 
     Type: AWS::ECS::Service
     Properties: 
-      Cluster: !Ref Cluster 
+      Cluster: !Ref EcsCluster 
       TaskDefinition: !Ref TaskDefinition
       DeploymentConfiguration:
         MaximumPercent: 200
@@ -32,23 +32,23 @@ Resources:
         DeploymentOption: WITH_TRAFFIC_CONTROL
         DeploymentType: BLUE_GREEN
       EcsServices: 
-        - ClusterName: !Ref Cluster
+        - ClusterName: !Ref EcsCluster
           ServiceName: !Ref MyService
 
 
-# IAM role for CodeDeploy    
-CodeDeployRole:
-  Type: AWS::IAM::Role
-  Properties:
-    AssumeRolePolicyDocument: 
-      Version: "2012-10-17"
-      Statement: 
-        - Effect: Allow 
-          Principal: 
-            Service: codedeploy.amazonaws.com
-          Action: "sts:AssumeRole"
+  # IAM role for CodeDeploy    
+  CodeDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: Allow 
+            Principal: 
+              Service: codedeploy.amazonaws.com
+            Action: "sts:AssumeRole"
 
-  # ECS cluster
+    # ECS cluster
   EcsCluster:
     Type: AWS::ECS::Cluster
 
