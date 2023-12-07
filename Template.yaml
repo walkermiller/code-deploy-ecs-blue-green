@@ -1,4 +1,57 @@
 Resources:
+
+  VPC:
+    Type: AWS::ECP::VPC
+    CidrBlock: 10.0.0.0/16
+
+  InternetGateway: 
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    VpcId: !Ref VPC
+    InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    VpcId: !Ref VPC 
+    CidrBlock: 10.0.1.0/24
+    MapPublicIpOnLaunch: true
+    AvailabilityZone: us-east-1a
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    VpcId: !Ref VPC
+    CidrBlock: 10.0.2.0/24 
+    MapPublicIpOnLaunch: true
+    AvailabilityZone: us-east-1b
+
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    VpcId: !Ref VPC
+    CidrBlock: 10.0.3.0/24
+    MapPublicIpOnLaunch: true 
+    AvailabilityZone: us-east-1c
+
+  PrivateSubnet1: 
+    Type: AWS::EC2::Subnet
+    VpcId: !Ref VPC
+    CidrBlock: 10.0.4.0/24
+    AvailabilityZone: us-east-1a
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet 
+    VpcId: !Ref VPC
+    CidrBlock: 10.0.5.0/24
+    AvailabilityZone: us-east-1b
+
+  PrivateSubnet3:  
+    Type: AWS::EC2::Subnet
+    VpcId: !Ref VPC
+    CidrBlock: 10.0.6.0/24
+    AvailabilityZone: us-east-1c
+
+
   # ECS service
   MyService: 
     Type: AWS::ECS::Service
@@ -57,6 +110,7 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: my-task
+      
       ContainerDefinitions: 
         - Name: my-container
           Image: nginx:latest 
@@ -71,12 +125,39 @@ Resources:
       Cluster: !Ref EcsCluster
       TaskDefinition: !Ref TaskDefinition
       DesiredCount: 1
+      LoadBalancers:
+        - !Ref LoadBalancer
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !Ref MySecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+            - !Ref PrivateSubnet3
+
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow all ingress from itself
+      SecurityGroupIngress:
+        - IpProtocol: "-1" 
+          FromPort: 0
+          ToPort: 0
+          SourceSecurityGroupId: !Ref MySecurityGroup
+
+      
 
   # NLB
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Type: network
+      Scheme: internet-facing
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
       LoadBalancerAttributes:
         - Key: "idle_timeout.timeout_seconds"
           Value: "30"
