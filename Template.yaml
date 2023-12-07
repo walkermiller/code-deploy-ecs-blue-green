@@ -69,6 +69,8 @@ Resources:
 
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC 
  
   PrivateRoute:
     Type: AWS::EC2::Route 
