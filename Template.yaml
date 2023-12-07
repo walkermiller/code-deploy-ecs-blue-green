@@ -1,5 +1,4 @@
 Resources:
-
   # ECS service
   MyService: 
     Type: AWS::ECS::Service
@@ -103,5 +102,3 @@ CodeDeployRole:
       DefaultActions:
         - TargetGroupArn: !Ref TargetGroup
           Type: forward
-
-This creates the necessary resources to deploy a containerized task behind an NLB. Let me know if any part needs more explanation!
