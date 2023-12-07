@@ -9,7 +9,8 @@ Resources:
 
   InternetGateway: 
     Type: AWS::EC2::InternetGateway
-
+    Properties: {}
+    
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -155,8 +156,6 @@ Resources:
       FromPort: 0
       ToPort: 0
       SourceSecurityGroupId: !Ref MySecurityGroup
-
-      
 
   # NLB
   LoadBalancer:
