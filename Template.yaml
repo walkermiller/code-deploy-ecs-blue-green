@@ -1,7 +1,7 @@
 Resources:
 
   VPC:
-    Type: AWS::ECP::VPC
+    Type: AWS::ECS::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
       EnableDnsSupport: true
@@ -10,7 +10,7 @@ Resources:
   InternetGateway: 
     Type: AWS::EC2::InternetGateway
     Properties: {}
-    
+
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
