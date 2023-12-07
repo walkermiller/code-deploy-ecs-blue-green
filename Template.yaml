@@ -2,65 +2,66 @@ Resources:
 
   VPC:
     Type: AWS::ECP::VPC
-    CidrBlock: 10.0.0.0/16
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
 
   InternetGateway: 
     Type: AWS::EC2::InternetGateway
 
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
-    VpcId: !Ref VPC
-    InternetGatewayId: !Ref InternetGateway
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
-    VpcId: !Ref VPC 
-    CidrBlock: 10.0.1.0/24
-    MapPublicIpOnLaunch: true
-    AvailabilityZone: us-east-1a
+    Properties: 
+      VpcId: !Ref VPC 
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: us-east-1a
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
-    VpcId: !Ref VPC
-    CidrBlock: 10.0.2.0/24 
-    MapPublicIpOnLaunch: true
-    AvailabilityZone: us-east-1b
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24 
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: us-east-1b
 
   PublicSubnet3:
     Type: AWS::EC2::Subnet
-    VpcId: !Ref VPC
-    CidrBlock: 10.0.3.0/24
-    MapPublicIpOnLaunch: true 
-    AvailabilityZone: us-east-1c
+    Properties: 
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.3.0/24
+      MapPublicIpOnLaunch: true 
+      AvailabilityZone: us-east-1c
 
   PrivateSubnet1: 
     Type: AWS::EC2::Subnet
-    VpcId: !Ref VPC
-    CidrBlock: 10.0.4.0/24
-    AvailabilityZone: us-east-1a
+    Properties: 
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.4.0/24
+      AvailabilityZone: us-east-1a
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet 
-    VpcId: !Ref VPC
-    CidrBlock: 10.0.5.0/24
-    AvailabilityZone: us-east-1b
+    Properties: 
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.5.0/24
+      AvailabilityZone: us-east-1b
 
   PrivateSubnet3:  
     Type: AWS::EC2::Subnet
-    VpcId: !Ref VPC
-    CidrBlock: 10.0.6.0/24
-    AvailabilityZone: us-east-1c
-
-
-  # ECS service
-  MyService: 
-    Type: AWS::ECS::Service
     Properties: 
-      Cluster: !Ref EcsCluster 
-      TaskDefinition: !Ref TaskDefinition
-      DeploymentConfiguration:
-        MaximumPercent: 200
-        MinimumHealthyPercent: 50
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.6.0/24
+      AvailabilityZone: us-east-1c
+
+
 
   # CodeDeploy application 
   MyApplication:
@@ -86,7 +87,7 @@ Resources:
         DeploymentType: BLUE_GREEN
       EcsServices: 
         - ClusterName: !Ref EcsCluster
-          ServiceName: !Ref MyService
+          ServiceName: !Ref EcsService
 
 
   # IAM role for CodeDeploy    
@@ -119,7 +120,7 @@ Resources:
             - ContainerPort: 80
 
   # ECS service  
-  Service:
+  EcsService:
     Type: AWS::ECS::Service
     Properties:  
       Cluster: !Ref EcsCluster
@@ -141,11 +142,19 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow all ingress from itself
-      SecurityGroupIngress:
-        - IpProtocol: "-1" 
-          FromPort: 0
-          ToPort: 0
-          SourceSecurityGroupId: !Ref MySecurityGroup
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 10.0.0.0/16
+
+  SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref MySecurityGroup
+      IpProtocol: -1
+      FromPort: 0
+      ToPort: 0
+      SourceSecurityGroupId: !Ref MySecurityGroup
 
       
 
@@ -161,26 +170,3 @@ Resources:
       LoadBalancerAttributes:
         - Key: "idle_timeout.timeout_seconds"
           Value: "30"
-
-  # Target group  
-  TargetGroup:  
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties: 
-      Port: 80
-      Protocol: TCP
-      TargetType: ip
-      Targets:
-        - Port: 80
-          TargetType: ip
-          Id: !Ref Service
-
-  # Listener  
-  Listener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: TCP
-      DefaultActions:
-        - TargetGroupArn: !Ref TargetGroup
-          Type: forward
