@@ -60,6 +60,7 @@ Resources:
       ContainerDefinitions: 
         - Name: my-container
           Image: nginx:latest 
+          Memory: 512
           PortMappings:
             - ContainerPort: 80
 
