@@ -112,10 +112,12 @@ Resources:
     Properties:
       Family: my-task
       RuntimePlatform: FARGATE
+      NetworkMode: awsvpc
+      Memory: 512
+      CPU: 256
       ContainerDefinitions: 
         - Name: my-container
           Image: nginx:latest 
-          Memory: 512
           PortMappings:
             - ContainerPort: 80
 
