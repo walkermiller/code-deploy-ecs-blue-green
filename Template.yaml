@@ -61,7 +61,39 @@ Resources:
       CidrBlock: 10.0.6.0/24
       AvailabilityZone: us-east-2c
 
+  # NAT Gateway and RouteTable entries for Private Subnet
+  NatGateway:
+    Type: AWS::EC2::NatGateway 
+    Properties:
+      SubnetId: !Ref PublicSubnet
 
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+ 
+  PrivateRoute:
+    Type: AWS::EC2::Route 
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+  
+  PrivateSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetRouteTableAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet3
+      RouteTableId: !Ref PrivateRouteTable
 
   # CodeDeploy application 
   MyApplication:
