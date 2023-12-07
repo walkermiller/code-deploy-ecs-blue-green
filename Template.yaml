@@ -9,7 +9,6 @@ Resources:
 
   InternetGateway: 
     Type: AWS::EC2::InternetGateway
-    Properties: {}
 
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -160,6 +159,7 @@ Resources:
   # NLB
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: VPCGatewayAttachment
     Properties:
       Type: network
       Scheme: internet-facing
