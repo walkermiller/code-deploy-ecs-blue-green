@@ -126,8 +126,14 @@ Resources:
       Cluster: !Ref EcsCluster
       TaskDefinition: !Ref TaskDefinition
       DesiredCount: 1
+      LaunchType: FARGATE
       LoadBalancers:
-        - !Ref LoadBalancer
+        - TargetGroupArn: !Ref TargetGroupGreen
+          ContainerName: my-container 
+          ContainerPort: 80
+        - TargetGroupArn: !Ref TargetGroupBlue
+          ContainerName: my-container
+          ContainerPort: 80
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
@@ -169,3 +175,56 @@ Resources:
       LoadBalancerAttributes:
         - Key: "idle_timeout.timeout_seconds"
           Value: "30"
+
+  BlueListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroupBlue
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: TCP
+
+  GreenListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroupGreen
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 8080
+      Protocol: TCP
+
+  TargetGroupBlue:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      VpcId: !Ref VPC
+      Port: 80
+      Protocol: TCP
+      TargetType: ip
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher: 
+        HttpCode: 200
+
+  TargetGroupGreen:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      VpcId: !Ref VPC
+      Port: 80
+      Protocol: TCP
+      TargetType: ip
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher: 
+        HttpCode: 200
+
