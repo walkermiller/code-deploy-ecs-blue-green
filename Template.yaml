@@ -65,7 +65,7 @@ Resources:
   NatGateway:
     Type: AWS::EC2::NatGateway 
     Properties:
-      SubnetId: !Ref PublicSubnet
+      SubnetId: !Ref PublicSubnet1
 
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
