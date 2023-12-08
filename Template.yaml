@@ -269,7 +269,7 @@ Resources:
           Type: forward
       LoadBalancerArn: !Ref LoadBalancer
       Port: 80
-      Protocol: TCP
+      Protocol: HTTP
 
   GreenListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -279,7 +279,7 @@ Resources:
           Type: forward
       LoadBalancerArn: !Ref LoadBalancer
       Port: 8080
-      Protocol: TCP
+      Protocol: HTTP
   
   BlueToGreenListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
