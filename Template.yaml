@@ -305,7 +305,7 @@ Resources:
     Properties: 
       VpcId: !Ref VPC
       Port: 80
-      Protocol: TCP
+      Protocol: HTTP
       TargetType: ip
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /
@@ -321,7 +321,7 @@ Resources:
     Properties: 
       VpcId: !Ref VPC
       Port: 80
-      Protocol: TCP
+      Protocol: HTTP
       TargetType: ip
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /
