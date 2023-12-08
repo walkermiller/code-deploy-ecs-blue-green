@@ -280,6 +280,25 @@ Resources:
       LoadBalancerArn: !Ref LoadBalancer
       Port: 8080
       Protocol: TCP
+  
+  BlueToGreenListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - forward 
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - /*
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: Test
+            Values:
+              - "true"
+              - "True"
+              - "TRUE"
+      ListenerArn: !Ref BlueListener
+      Priority: 2
 
   TargetGroupBlue:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
