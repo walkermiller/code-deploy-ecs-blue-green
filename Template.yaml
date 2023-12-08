@@ -162,13 +162,11 @@ Resources:
                 - !Ref BlueListener
             TargetGroups: 
               - Name: !Ref TargetGroupBlue
-          - TestTrafficRoute: 
+              - Name: !Ref TargetGroupGreen
+            TestTrafficRoute: 
               ListenerArns: 
                 - !Ref GreenListener
-            TargetGroups: 
-              - Name: !Ref TargetGroupGreen
-
-
+              
   # IAM role for CodeDeploy    
   CodeDeployRole:
     Type: AWS::IAM::Role
