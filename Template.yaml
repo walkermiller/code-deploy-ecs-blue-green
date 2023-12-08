@@ -73,7 +73,7 @@ Resources:
     Type: AWS::EC2::NatGateway 
     Properties:
       SubnetId: !Ref PublicSubnet1
-      AllocationId: !GetAtt ElasticIP.AllocationId
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
 
  
 
