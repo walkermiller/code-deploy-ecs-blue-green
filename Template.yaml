@@ -154,7 +154,21 @@ Resources:
         DeploymentType: BLUE_GREEN
       ECSServices: 
         - ClusterName: !Ref EcsCluster
-          ServiceName: !Ref EcsService  
+          ServiceName: !Ref EcsService
+      LoadLoadBalancerInfo: 
+            TargetGroupPairInfoList: 
+              - ProdTrafficRoute: 
+                  ListenerArns: 
+                    - !Ref BlueListener
+                TargetGroups: 
+                  - Name: !Ref TargetGroupBlue
+                    Weight: 1
+              - TestTrafficRoute: 
+                  ListenerArns: 
+                    - !Ref GreenListener
+                TargetGroups: 
+                  - Name: !Ref TargetGroupGreen
+                    Weight: 1
 
 
   # IAM role for CodeDeploy    
