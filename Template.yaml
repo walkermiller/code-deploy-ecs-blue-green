@@ -155,7 +155,7 @@ Resources:
       ECSServices: 
         - ClusterName: !Ref EcsCluster
           ServiceName: !Ref EcsService
-      LoadLoadBalancerInfo: 
+      LoadBalancerInfo: 
             TargetGroupPairInfoList: 
               - ProdTrafficRoute: 
                   ListenerArns: 
