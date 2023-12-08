@@ -285,14 +285,15 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       Actions:
-        - forward 
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroupGreen 
       Conditions:
         - Field: path-pattern
           Values:
             - /*
         - Field: http-header
           HttpHeaderConfig:
-            HttpHeaderName: Test
+            HttpHeaderName: Green
             Values:
               - "true"
               - "True"
