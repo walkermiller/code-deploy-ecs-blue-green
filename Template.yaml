@@ -156,19 +156,17 @@ Resources:
         - ClusterName: !Ref EcsCluster
           ServiceName: !Ref EcsService
       LoadBalancerInfo: 
-            TargetGroupPairInfoList: 
-              - ProdTrafficRoute: 
-                  ListenerArns: 
-                    - !Ref BlueListener
-                TargetGroups: 
-                  - Name: !Ref TargetGroupBlue
-                    Weight: 1
-              - TestTrafficRoute: 
-                  ListenerArns: 
-                    - !Ref GreenListener
-                TargetGroups: 
-                  - Name: !Ref TargetGroupGreen
-                    Weight: 1
+        TargetGroupPairInfoList: 
+          - ProdTrafficRoute: 
+              ListenerArns: 
+                - !Ref BlueListener
+            TargetGroups: 
+              - Name: !Ref TargetGroupBlue
+          - TestTrafficRoute: 
+              ListenerArns: 
+                - !Ref GreenListener
+            TargetGroups: 
+              - Name: !Ref TargetGroupGreen
 
 
   # IAM role for CodeDeploy    
