@@ -105,6 +105,35 @@ Resources:
       SubnetId: !Ref PrivateSubnet3
       RouteTableId: !Ref PrivateRouteTable
 
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+  
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref 'PublicRouteTable'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref 'InternetGateway'
+  
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+  PublicSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet3
+      RouteTableId: !Ref PublicRouteTable
+
   # CodeDeploy application 
   MyApplication:
     Type: AWS::CodeDeploy::Application
@@ -215,12 +244,12 @@ Resources:
       ToPort: 0
       SourceSecurityGroupId: !Ref MySecurityGroup
 
-  # NLB
+  # ALB
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     DependsOn: VPCGatewayAttachment
     Properties:
-      Type: network
+      Type: application
       Scheme: internet-facing
       SecurityGroups:
         - !Ref MySecurityGroup
@@ -231,6 +260,7 @@ Resources:
         - Key: "idle_timeout.timeout_seconds"
           Value: "30"
 
+ 
   BlueListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
