@@ -60,12 +60,22 @@ Resources:
       VpcId: !Ref VPC
       CidrBlock: 10.0.6.0/24
       AvailabilityZone: us-east-2c
+  
+  # Elastic IP for NAT Gateway
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      Domain: vpc
 
   # NAT Gateway and RouteTable entries for Private Subnet
   NatGateway:
     Type: AWS::EC2::NatGateway 
     Properties:
       SubnetId: !Ref PublicSubnet1
+      AllocationId: !GetAtt ElasticIP.AllocationId
+
+ 
 
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -112,10 +122,6 @@ Resources:
       DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce 
       DeploymentGroupName: MyDeploymentGroup
       ServiceRoleArn: !Ref CodeDeployRole
-      Ec2TagFilter: 
-        Type: key-value
-        Key: Name
-        Value: ecs-host
       DeploymentStyle: 
         DeploymentOption: WITH_TRAFFIC_CONTROL
         DeploymentType: BLUE_GREEN
