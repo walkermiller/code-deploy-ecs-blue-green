@@ -11,7 +11,7 @@ Hooks:
       Applications:
         - Target:
             Type: 'AWS::ECS::Service'
-            LogicalID: ECSService
+            LogicalID: ECSDemoService
           ECSAttributes:
             TaskDefinitions:
               - TaskDefinition
@@ -152,7 +152,7 @@ Resources:
             - ContainerPort: 80
 
   # ECS service  
-  ECSService:
+  ECSDemoService:
     Type: AWS::ECS::Service
     DependsOn:
     - BlueListener
