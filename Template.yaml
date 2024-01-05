@@ -207,7 +207,8 @@ Resources:
       Cluster: !Ref EcsCluster
       TaskDefinition: !Ref TaskDefinition
       DesiredCount: 1
-      DeploymentController: CODE_DEPLOY
+      DeploymentController: 
+        Type: CODE_DEPLOY
       LaunchType: FARGATE
       LoadBalancers:
         - TargetGroupArn: !Ref TargetGroupGreen
