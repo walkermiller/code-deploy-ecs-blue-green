@@ -158,14 +158,12 @@ Resources:
       LoadBalancerInfo: 
         TargetGroupPairInfoList: 
           - ProdTrafficRoute: 
-              ListenerArns: 
-                - !Ref BlueListener
+              ListenerArns: [!Ref BlueListener]
             TargetGroups: 
               - Name: !Ref TargetGroupBlue
               - Name: !Ref TargetGroupGreen
             TestTrafficRoute: 
-              ListenerArns: 
-                - !Ref GreenListener
+              ListenerArns: [!Ref GreenListener]
               
   # IAM role for CodeDeploy    
   CodeDeployRole:
