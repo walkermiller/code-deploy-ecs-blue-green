@@ -11,7 +11,7 @@ Hooks:
       Applications:
         - Target:
             Type: 'AWS::ECS::Service'
-            LogicalID: ECSService
+            LogicalID: EcsService
           ECSAttributes:
             TaskDefinitions:
               - TaskDefinition
