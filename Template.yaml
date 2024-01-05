@@ -11,10 +11,10 @@ Hooks:
       Applications:
         - Target:
             Type: 'AWS::ECS::Service'
-            LogicalID: ECSDemoService
+            LogicalID: ECSService
           ECSAttributes:
             TaskDefinitions:
-              - BlueTaskDefinition
+              - TaskDefinition
               - GreenTaskDefinition
             TaskSets:
               - BlueTaskSet
@@ -24,8 +24,8 @@ Hooks:
                 Type: 'AWS::ElasticLoadBalancingV2::Listener'
                 LogicalID: ALBListenerProdTraffic
               TargetGroups:
-                - ALBTargetGroupBlue
-                - ALBTargetGroupGreen
+                - TargetGroupBlue
+                - TargetGroupGreen
     Type: 'AWS::CodeDeploy::BlueGreen'
 Resources:
   SecurityGroup:
