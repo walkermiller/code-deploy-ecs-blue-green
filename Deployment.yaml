@@ -1,3 +1,6 @@
 template-file-path: ./Template.yaml
-parameters: {}
+parameters:
+  Vpc: vpc-0180b7233870c8351
+  Subnet1: subnet-019ab441ca1c60a12
+  Subnet2: subnet-06b1a307d8731865c
 tags: {}
