@@ -1,5 +1,217 @@
+Transform:
+  - 'AWS::CodeDeployBlueGreen'
+Hooks:
+  CodeDeployBlueGreenHook:
+    Properties:
+      TrafficRoutingConfig:
+        Type: TimeBasedCanary
+        TimeBasedCanary:
+          StepPercentage: 15
+          BakeTimeMins: 5
+      Applications:
+        - Target:
+            Type: 'AWS::ECS::Service'
+            LogicalID: ECSDemoService
+          ECSAttributes:
+            TaskDefinitions:
+              - BlueTaskDefinition
+              - GreenTaskDefinition
+            TaskSets:
+              - BlueTaskSet
+              - GreenTaskSet
+            TrafficRouting:
+              ProdTrafficRoute:
+                Type: 'AWS::ElasticLoadBalancingV2::Listener'
+                LogicalID: ALBListenerProdTraffic
+              TargetGroups:
+                - ALBTargetGroupBlue
+                - ALBTargetGroupGreen
+    Type: 'AWS::CodeDeploy::BlueGreen'
 Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow all ingress from itself
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+  SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: -1
+      FromPort: 0
+      ToPort: 0
+      SourceSecurityGroupId: !Ref SecurityGroup
 
+  TargetGroupBlue:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      VpcId: !Ref VPC
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher: 
+        HttpCode: 200
+
+  TargetGroupGreen:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      VpcId: !Ref VPC
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher: 
+        HttpCode: 200
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref MySecurityGroup
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+        - !Ref PublicSubnet3
+      LoadBalancerAttributes:
+        - Key: "idle_timeout.timeout_seconds"
+          Value: "30"
+  ProdListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroupBlue
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  TestListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroupGreen
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 8080
+      Protocol: HTTP
+  ProdListenerRule:
+    Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
+    Properties:
+      Actions:
+        - Type: forward
+          ForwardConfig:
+            TargetGroups:
+              - TargetGroupArn: !Ref TargetGroupBlue
+                Weight: 1
+
+## ECS
+# ECS cluster
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+
+  # Task definition
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - FARGATE
+      Family: my-task
+      NetworkMode: awsvpc
+      Memory: 512
+      CPU: 256
+      ContainerDefinitions: 
+        - Name: my-container
+          Image: nginx:latest 
+          PortMappings:
+            - ContainerPort: 80
+
+  # ECS service  
+  EcsService:
+    Type: AWS::ECS::Service
+    DependsOn:
+    - BlueListener
+    - GreenListener
+    Properties:  
+      Cluster: !Ref EcsCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 1
+      DeploymentController: 
+        Type: EXTERNAL
+      LaunchType: FARGATE
+      LoadBalancers:
+        - TargetGroupArn: !Ref TargetGroupGreen
+          ContainerName: my-container 
+          ContainerPort: 80
+        - TargetGroupArn: !Ref TargetGroupBlue
+          ContainerName: my-container
+          ContainerPort: 80
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !Ref MySecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+            - !Ref PrivateSubnet3
+  BlueTaskSet:
+    Type: 'AWS::ECS::TaskSet'
+    Properties:
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsVpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !Ref SecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+      PlatformVersion: 1.4.0
+      Scale:
+        Unit: PERCENT
+        Value: 100
+      Service: !Ref ECSService
+      TaskDefinition: !Ref TaskDefinition
+      LoadBalancers:
+        - ContainerName: my-container
+          ContainerPort: 80
+          TargetGroupArn: !Ref TargetGroupBlue
+  PrimaryTaskSet:
+    Type: 'AWS::ECS::PrimaryTaskSet'
+    Properties:
+      Cluster: !Ref ECSCluster
+      Service: !Ref ECSService
+      TaskSetId: !GetAtt 
+        - BlueTaskSet
+        - Id
+# VPC
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -133,222 +345,4 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet3
       RouteTableId: !Ref PublicRouteTable
-
-  # CodeDeploy application 
-  MyApplication:
-    Type: AWS::CodeDeploy::Application
-    Properties: 
-      ApplicationName: BlueGreenSample
-      ComputePlatform: ECS
-
-  # CodeDeploy deployment group
-  DeploymentGroup:  
-    Type: AWS::CodeDeploy::DeploymentGroup
-    Properties:
-      ApplicationName: !Ref MyApplication 
-      DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce 
-      DeploymentGroupName: MyDeploymentGroup
-      ServiceRoleArn: !GetAtt CodeDeployRole.Arn
-      DeploymentStyle: 
-        DeploymentOption: WITH_TRAFFIC_CONTROL
-        DeploymentType: BLUE_GREEN
-      BlueGreenDeploymentConfiguration:
-        DeploymentReadyOption:
-          ActionOnTimeout: STOP_DEPLOYMENT
-          WaitTimeInMinutes: 5
-        GreenFleetProvisioningOption: {Action: DISCOVER_EXISTING}
-        BlueInstanceTerminationOption:
-          Action: TERMINATE
-          TerminationWaitTimeInMinutes: 5
-      ECSServices: 
-        - ClusterName: !Ref EcsCluster
-          ServiceName: !GetAtt EcsService.Name
-      LoadBalancerInfo: 
-        TargetGroupPairInfoList: 
-          - ProdTrafficRoute: 
-              ListenerArns: [!Ref BlueListener]
-            TargetGroups: 
-              - Name: !Ref TargetGroupBlue
-              - Name: !Ref TargetGroupGreen
-            TestTrafficRoute: 
-              ListenerArns: [!Ref GreenListener]
-              
-  # IAM role for CodeDeploy    
-  CodeDeployRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument: 
-        Version: "2012-10-17"
-        Statement: 
-          - Effect: Allow 
-            Principal: 
-              Service: codedeploy.amazonaws.com
-            Action: "sts:AssumeRole"
-
-    # ECS cluster
-  EcsCluster:
-    Type: AWS::ECS::Cluster
-
-  # Task definition
-  TaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      RequiresCompatibilities:
-        - FARGATE
-      Family: my-task
-      NetworkMode: awsvpc
-      Memory: 512
-      CPU: 256
-      ContainerDefinitions: 
-        - Name: my-container
-          Image: nginx:latest 
-          PortMappings:
-            - ContainerPort: 80
-
-  # ECS service  
-  EcsService:
-    Type: AWS::ECS::Service
-    DependsOn:
-    - BlueListener
-    - GreenListener
-    Properties:  
-      Cluster: !Ref EcsCluster
-      TaskDefinition: !Ref TaskDefinition
-      DesiredCount: 1
-      DeploymentController: 
-        Type: CODE_DEPLOY
-      LaunchType: FARGATE
-      LoadBalancers:
-        - TargetGroupArn: !Ref TargetGroupGreen
-          ContainerName: my-container 
-          ContainerPort: 80
-        - TargetGroupArn: !Ref TargetGroupBlue
-          ContainerName: my-container
-          ContainerPort: 80
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-            - !Ref MySecurityGroup
-          Subnets:
-            - !Ref PrivateSubnet1
-            - !Ref PrivateSubnet2
-            - !Ref PrivateSubnet3
-
-  MySecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow all ingress from itself
-      VpcId: !Ref VPC
-      SecurityGroupEgress:
-        - IpProtocol: -1
-          CidrIp: 0.0.0.0/0
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp: 0.0.0.0/0
-
-  SecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref MySecurityGroup
-      IpProtocol: -1
-      FromPort: 0
-      ToPort: 0
-      SourceSecurityGroupId: !Ref MySecurityGroup
-
-  # ALB
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    DependsOn: VPCGatewayAttachment
-    Properties:
-      Type: application
-      Scheme: internet-facing
-      SecurityGroups:
-        - !Ref MySecurityGroup
-      Subnets:
-        - !Ref PublicSubnet1
-        - !Ref PublicSubnet2
-        - !Ref PublicSubnet3
-      LoadBalancerAttributes:
-        - Key: "idle_timeout.timeout_seconds"
-          Value: "30"
-
- 
-  BlueListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - TargetGroupArn: !Ref TargetGroupBlue
-          Type: forward
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: HTTP
-
-  GreenListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - TargetGroupArn: !Ref TargetGroupGreen
-          Type: forward
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 8080
-      Protocol: HTTP
-  
-  BlueToGreenListenerRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroupGreen 
-      Conditions:
-        - Field: path-pattern
-          Values:
-            - /*
-        - Field: http-header
-          HttpHeaderConfig:
-            HttpHeaderName: Green
-            Values:
-              - "true"
-              - "True"
-              - "TRUE"
-      ListenerArn: !Ref BlueListener
-      Priority: 2
-
-  TargetGroupBlue:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties: 
-      VpcId: !Ref VPC
-      Port: 80
-      Protocol: HTTP
-      TargetType: ip
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 2
-      Matcher: 
-        HttpCode: 200
-
-  TargetGroupGreen:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties: 
-      VpcId: !Ref VPC
-      Port: 80
-      Protocol: HTTP
-      TargetType: ip
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 2
-      Matcher: 
-        HttpCode: 200
 
