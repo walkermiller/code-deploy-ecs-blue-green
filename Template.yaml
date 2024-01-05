@@ -11,7 +11,7 @@ Hooks:
       Applications:
         - Target:
             Type: 'AWS::ECS::Service'
-            LogicalID: EcsService
+            LogicalID: ECSService
           ECSAttributes:
             TaskDefinitions:
               - TaskDefinition
@@ -132,7 +132,7 @@ Resources:
 
 ## ECS
 # ECS cluster
-  EcsCluster:
+  ECSCluster:
     Type: AWS::ECS::Cluster
 
   # Task definition
@@ -152,34 +152,17 @@ Resources:
             - ContainerPort: 80
 
   # ECS service  
-  EcsService:
+  ECSService:
     Type: AWS::ECS::Service
     DependsOn:
     - BlueListener
     - GreenListener
     Properties:  
-      Cluster: !Ref EcsCluster
+      Cluster: !Ref ECSCuster
       TaskDefinition: !Ref TaskDefinition
       DesiredCount: 1
       DeploymentController: 
         Type: EXTERNAL
-      LaunchType: FARGATE
-      LoadBalancers:
-        - TargetGroupArn: !Ref TargetGroupGreen
-          ContainerName: my-container 
-          ContainerPort: 80
-        - TargetGroupArn: !Ref TargetGroupBlue
-          ContainerName: my-container
-          ContainerPort: 80
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-            - !Ref MySecurityGroup
-          Subnets:
-            - !Ref PrivateSubnet1
-            - !Ref PrivateSubnet2
-            - !Ref PrivateSubnet3
   BlueTaskSet:
     Type: 'AWS::ECS::TaskSet'
     Properties:
